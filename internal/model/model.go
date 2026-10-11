@@ -39,13 +39,6 @@ type Destination struct {
 	Bytes   uint64 `json:"bytes"`
 }
 
-// Indicator is a pattern worth a look, never a verdict.
-type Indicator struct {
-	Kind   string  `json:"kind"` // port_scan, host_scan, conn_spike, flood, smtp_burst
-	Detail string  `json:"detail"`
-	Value  float64 `json:"value"`
-}
-
 type VMStats struct {
 	VM            VM            `json:"vm"`
 	OutBps        float64       `json:"out_bps"` // bits per second leaving the VM
@@ -58,7 +51,6 @@ type VMStats struct {
 	UniqueDstIPs  int           `json:"unique_dst_ips"`
 	UniqueDstPort int           `json:"unique_dst_ports"`
 	Top           []Destination `json:"top_destinations,omitempty"`
-	Indicators    []Indicator   `json:"indicators,omitempty"`
 	Sampled       bool          `json:"flows_sampled"` // false when header sampling is unavailable
 }
 

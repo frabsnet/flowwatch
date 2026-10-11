@@ -17,7 +17,7 @@ import (
 	"github.com/frabsnet/flowwatch/internal/ui"
 )
 
-var version = "0.1.1"
+var version = "0.2.0"
 
 const usage = `FlowWatch by Frabs.net %s · https://frabs.net
 See which VMs on this server are sending unusual outbound traffic.
@@ -33,8 +33,6 @@ Options (dashboard and report):
   -sample 1                 keep 1 in N packet headers (raise on very busy hosts)
   -counters-only            interface counters only, no packet headers
   -top 10                   destinations kept per VM
-  -scan-ports 100 -scan-hosts 200 -spike 5 -spike-min 50 -flood-pps 20000 -smtp 30
-                            indicator thresholds
 
 Report options:
   -duration 30s             how long to measure
@@ -61,17 +59,10 @@ func main() {
 	duration := fs.Duration("duration", 30*time.Second, "")
 	format := fs.String("format", "table", "")
 	out := fs.String("o", "", "")
-	th := collect.DefaultThresholds
-	fs.IntVar(&th.ScanPorts, "scan-ports", th.ScanPorts, "")
-	fs.IntVar(&th.ScanHosts, "scan-hosts", th.ScanHosts, "")
-	fs.Float64Var(&th.SpikeFactor, "spike", th.SpikeFactor, "")
-	fs.Float64Var(&th.SpikeMin, "spike-min", th.SpikeMin, "")
-	fs.Float64Var(&th.FloodPps, "flood-pps", th.FloodPps, "")
-	fs.Float64Var(&th.SMTPConns, "smtp", th.SMTPConns, "")
 	_ = fs.Parse(args)
 
 	node, _ := os.Hostname()
-	opt := collect.Options{Sample: *sample, TopN: *top, Thresholds: th, NoFlows: *countersOnly}
+	opt := collect.Options{Sample: *sample, TopN: *top, NoFlows: *countersOnly}
 	switch cmd {
 	case "version", "-v", "--version":
 		fmt.Printf("FlowWatch by Frabs.net %s (https://frabs.net)\n", version)
@@ -156,7 +147,7 @@ func report(node string, opt collect.Options, interval, duration time.Duration, 
 	return 0
 }
 
-// merge folds the windows into one summary per VM: totals, peaks and every indicator seen.
+// merge folds the windows into one summary per VM: totals and peaks.
 func merge(snaps []model.Snapshot) model.Snapshot {
 	if len(snaps) == 0 {
 		return model.Snapshot{}
@@ -171,7 +162,7 @@ func merge(snaps []model.Snapshot) model.Snapshot {
 			m := byKey[k]
 			if m == nil {
 				cp := v
-				cp.OutBytes, cp.InBytes, cp.Indicators = 0, 0, nil
+				cp.OutBytes, cp.InBytes = 0, 0
 				m = &cp
 				byKey[k] = m
 				order = append(order, k)
@@ -182,7 +173,6 @@ func merge(snaps []model.Snapshot) model.Snapshot {
 			m.NewConns = max(m.NewConns, v.NewConns)
 			m.UniqueDstIPs = max(m.UniqueDstIPs, v.UniqueDstIPs)
 			m.UniqueDstPort = max(m.UniqueDstPort, v.UniqueDstPort)
-			m.Indicators = append(m.Indicators, v.Indicators...)
 			if len(v.Top) > 0 && (len(m.Top) == 0 || v.Top[0].Bytes > m.Top[0].Bytes) {
 				m.Top = v.Top
 			}
@@ -198,21 +188,17 @@ func merge(snaps []model.Snapshot) model.Snapshot {
 
 func table(w *os.File, s model.Snapshot) error {
 	fmt.Fprintf(w, "FlowWatch by Frabs.net · %s · %s%s · %s to %s\n\n", s.Node, s.Platform, panelSuffix(), s.Start.Format("15:04:05"), s.End.Format("15:04:05"))
-	fmt.Fprintf(w, "%-34s %12s %12s %12s %10s %6s  %s\n", "VM", "PEAK OUT", "SENT", "RECEIVED", "PEAK CONN", "DSTS", "INDICATORS")
+	fmt.Fprintf(w, "%-34s %12s %12s %12s %10s %6s  %s\n", "VM", "PEAK OUT", "SENT", "RECEIVED", "PEAK CONN", "DSTS", "TOP DESTINATION")
 	for _, v := range s.VMs {
 		name := v.VM.Key.ID
 		if len(v.VM.IPs) > 0 {
 			name += " " + v.VM.IPs[0]
 		}
-		var ind []string
-		seen := map[string]bool{}
-		for _, i := range v.Indicators {
-			if !seen[i.Kind] {
-				seen[i.Kind] = true
-				ind = append(ind, i.Kind)
-			}
+		top := ""
+		if len(v.Top) > 0 {
+			top = fmt.Sprintf("%s %s/%d", v.Top[0].IP, v.Top[0].Proto, v.Top[0].Port)
 		}
-		fmt.Fprintf(w, "%-34.34s %12s %12s %12s %10.0f %6d  %s\n", name, ui.Rate(v.OutBps), ui.Bytes(v.OutBytes), ui.Bytes(v.InBytes), v.NewConns, v.UniqueDstIPs, strings.Join(ind, ", "))
+		fmt.Fprintf(w, "%-34.34s %12s %12s %12s %10.0f %6d  %s\n", name, ui.Rate(v.OutBps), ui.Bytes(v.OutBytes), ui.Bytes(v.InBytes), v.NewConns, v.UniqueDstIPs, top)
 	}
 	for _, wn := range s.Warnings {
 		fmt.Fprintf(w, "\n! %s", wn)
@@ -248,7 +234,7 @@ func dashboard(node string, opt collect.Options, interval time.Duration) int {
 	defer tick.Stop()
 	rescan := time.NewTicker(60 * time.Second)
 	defer rescan.Stop()
-	sorts := []string{"out", "in", "conns", "flags"}
+	sorts := []string{"out", "in", "conns"}
 	for {
 		select {
 		case s := <-sig:

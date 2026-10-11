@@ -96,7 +96,6 @@ const (
 	bold  = "\x1b[1m"
 	dim   = "\x1b[2m"
 	teal  = "\x1b[38;5;37m"
-	red   = "\x1b[38;5;203m"
 	amber = "\x1b[38;5;214m"
 	inv   = "\x1b[7m"
 	reset = "\x1b[0m"
@@ -106,7 +105,7 @@ const (
 type State struct {
 	Selected int
 	Detail   bool
-	SortBy   string // out, in, conns, flags
+	SortBy   string // out, in, conns
 	Filter   string
 	Typing   bool
 	Paused   bool
@@ -119,8 +118,6 @@ func Sort(vms []model.VMStats, by string) {
 			return vms[a].InBps > vms[b].InBps
 		case "conns":
 			return vms[a].NewConns > vms[b].NewConns
-		case "flags":
-			return len(vms[a].Indicators) > len(vms[b].Indicators)
 		}
 		return vms[a].OutBps > vms[b].OutBps
 	})
@@ -164,24 +161,16 @@ func Draw(w io.Writer, snap model.Snapshot, panel string, st *State, version str
 	var b strings.Builder
 	b.WriteString("\x1b[H\x1b[2J")
 	var totOut, totIn float64
-	flagged := 0
 	for _, v := range snap.VMs {
 		totOut += v.OutBps
 		totIn += v.InBps
-		if len(v.Indicators) > 0 {
-			flagged++
-		}
 	}
 	where := snap.Platform
 	if panel != "" {
 		where = panel
 	}
 	fmt.Fprintf(&b, "%s%s FlowWatch %s%s by Frabs.net%s  %sv%s%s\x1b[%dG%s%s%s\r\n", teal, bold, reset, bold, reset, dim, version, reset, max(1, cols-len(snap.Node)-len(where)-3), dim, snap.Node+" · "+where, reset)
-	flagColour := ""
-	if flagged > 0 {
-		flagColour = red
-	}
-	fmt.Fprintf(&b, "%sOut%s %-12s %sIn%s %-12s %sVMs%s %-5d %sFlagged%s %s%d%s", dim, reset, Rate(totOut), dim, reset, Rate(totIn), dim, reset, len(snap.VMs), dim, reset, flagColour, flagged, reset)
+	fmt.Fprintf(&b, "%sOut%s %-12s %sIn%s %-12s %sVMs%s %d", dim, reset, Rate(totOut), dim, reset, Rate(totIn), dim, reset, len(snap.VMs))
 	if st.Paused {
 		fmt.Fprintf(&b, "   %sPAUSED%s", amber, reset)
 	}
@@ -201,8 +190,8 @@ func Draw(w io.Writer, snap model.Snapshot, panel string, st *State, version str
 		drawDetail(&b, vms[st.Selected], cols, body)
 	} else {
 		const ipW = 15
-		nameW := max(12, cols-ipW-82)
-		head := fmt.Sprintf("%s %s %s %s %s %s %s %s  %s", pad("VM", nameW), pad("IP", ipW), lpad("OUT", 11), lpad("IN", 11), lpad("OUT PPS", 9), lpad("CONN/S", 7), lpad("DSTS", 6), lpad("PORTS", 6), "FLAGS")
+		nameW := max(12, cols-ipW-66)
+		head := fmt.Sprintf("%s %s %s %s %s %s %s %s", pad("VM", nameW), pad("IP", ipW), lpad("OUT", 11), lpad("IN", 11), lpad("OUT PPS", 9), lpad("CONN/S", 7), lpad("DSTS", 6), lpad("PORTS", 6))
 		fmt.Fprintf(&b, "%s%s%s\r\n", dim, pad(head, cols), reset)
 		start := 0
 		if st.Selected >= body-1 {
@@ -218,22 +207,15 @@ func Draw(w io.Writer, snap model.Snapshot, panel string, st *State, version str
 			if len(v.VM.IPs) > 0 {
 				ip = v.VM.IPs[0]
 			}
-			flags := ""
-			if len(v.Indicators) > 0 {
-				flags = red + v.Indicators[0].Kind + reset
-				if len(v.Indicators) > 1 {
-					flags += dim + fmt.Sprintf(" +%d", len(v.Indicators)-1) + reset
-				}
-			}
 			conns := "-"
 			if v.Sampled {
 				conns = strconv.FormatFloat(v.NewConns, 'f', 0, 64)
 			}
-			line := fmt.Sprintf("%s %s %s %s %s %s %s %s  ", pad(name, nameW), pad(ip, ipW), lpad(Rate(v.OutBps), 11), lpad(Rate(v.InBps), 11), lpad(strconv.FormatFloat(v.OutPps, 'f', 0, 64), 9), lpad(conns, 7), lpad(strconv.Itoa(v.UniqueDstIPs), 6), lpad(strconv.Itoa(v.UniqueDstPort), 6))
+			line := fmt.Sprintf("%s %s %s %s %s %s %s %s", pad(name, nameW), pad(ip, ipW), lpad(Rate(v.OutBps), 11), lpad(Rate(v.InBps), 11), lpad(strconv.FormatFloat(v.OutPps, 'f', 0, 64), 9), lpad(conns, 7), lpad(strconv.Itoa(v.UniqueDstIPs), 6), lpad(strconv.Itoa(v.UniqueDstPort), 6))
 			if i == st.Selected {
-				fmt.Fprintf(&b, "%s%s%s%s\r\n", inv, line, reset, flags)
+				fmt.Fprintf(&b, "%s%s%s\r\n", inv, line, reset)
 			} else {
-				fmt.Fprintf(&b, "%s%s\r\n", line, flags)
+				fmt.Fprintf(&b, "%s\r\n", line)
 			}
 		}
 		if len(vms) == 0 && st.Filter != "" {
@@ -259,13 +241,6 @@ func drawDetail(b *strings.Builder, v model.VMStats, cols, body int) {
 	}
 	fmt.Fprintf(b, "%sIPs%s %s   %sInterfaces%s %s\r\n", dim, reset, strings.Join(v.VM.IPs, ", "), dim, reset, strings.Join(ifs, ", "))
 	fmt.Fprintf(b, "%sOut%s %s (%s)  %sIn%s %s (%s)  %sNew conns/s%s %.0f  %sDestinations%s %d  %sPorts%s %d\r\n\r\n", dim, reset, Rate(v.OutBps), Bytes(v.OutBytes), dim, reset, Rate(v.InBps), Bytes(v.InBytes), dim, reset, v.NewConns, dim, reset, v.UniqueDstIPs, dim, reset, v.UniqueDstPort)
-	if len(v.Indicators) > 0 {
-		fmt.Fprintf(b, "%sINDICATORS%s\r\n", dim, reset)
-		for _, i := range v.Indicators {
-			fmt.Fprintf(b, "  %s%-11s%s %s\r\n", red, i.Kind, reset, i.Detail)
-		}
-		b.WriteString("\r\n")
-	}
 	if !v.Sampled {
 		fmt.Fprintf(b, "%sDestinations need root (or CAP_NET_RAW).%s\r\n", dim, reset)
 		return
@@ -293,20 +268,16 @@ func JSON(w io.Writer, snaps []model.Snapshot) error {
 func CSV(w io.Writer, snaps []model.Snapshot) error {
 	fmt.Fprintf(w, "# %s (%s)\n", Brand, BrandURL)
 	c := csv.NewWriter(w)
-	_ = c.Write([]string{"window_end", "node", "platform", "vm_id", "vm_name", "ips", "out_bps", "in_bps", "out_bytes", "in_bytes", "out_pps", "new_conns_per_s", "unique_dst_ips", "unique_dst_ports", "indicators", "top_destination"})
+	_ = c.Write([]string{"window_end", "node", "platform", "vm_id", "vm_name", "ips", "out_bps", "in_bps", "out_bytes", "in_bytes", "out_pps", "new_conns_per_s", "unique_dst_ips", "unique_dst_ports", "top_destination"})
 	for _, s := range snaps {
 		for _, v := range s.VMs {
-			var ind []string
-			for _, i := range v.Indicators {
-				ind = append(ind, i.Kind+": "+i.Detail)
-			}
 			top := ""
 			if len(v.Top) > 0 {
 				top = fmt.Sprintf("%s %s/%d", v.Top[0].IP, v.Top[0].Proto, v.Top[0].Port)
 			}
 			_ = c.Write([]string{s.End.UTC().Format("2006-01-02T15:04:05Z"), v.VM.Key.Node, v.VM.Key.Platform, v.VM.Key.ID, v.VM.Name, strings.Join(v.VM.IPs, " "),
 				strconv.FormatFloat(v.OutBps, 'f', 0, 64), strconv.FormatFloat(v.InBps, 'f', 0, 64), strconv.FormatUint(v.OutBytes, 10), strconv.FormatUint(v.InBytes, 10),
-				strconv.FormatFloat(v.OutPps, 'f', 0, 64), strconv.FormatFloat(v.NewConns, 'f', 1, 64), strconv.Itoa(v.UniqueDstIPs), strconv.Itoa(v.UniqueDstPort), strings.Join(ind, "; "), top})
+				strconv.FormatFloat(v.OutPps, 'f', 0, 64), strconv.FormatFloat(v.NewConns, 'f', 1, 64), strconv.Itoa(v.UniqueDstIPs), strconv.Itoa(v.UniqueDstPort), top})
 		}
 	}
 	c.Flush()

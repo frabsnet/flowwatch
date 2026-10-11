@@ -5,7 +5,6 @@ package collect
 
 import (
 	"encoding/binary"
-	"fmt"
 	"net/netip"
 	"os"
 	"sort"
@@ -19,24 +18,11 @@ import (
 	"github.com/frabsnet/flowwatch/internal/model"
 )
 
-// Thresholds for indicators. They flag patterns worth a look; they never block anything.
-type Thresholds struct {
-	ScanPorts   int     // distinct destination ports on one IP in a window
-	ScanHosts   int     // distinct destination IPs on one port in a window
-	SpikeFactor float64 // new connections per second vs the VM's own average
-	SpikeMin    float64 // ...and at least this many per second
-	FloodPps    float64 // packets per second to a single destination
-	SMTPConns   float64 // new connections to port 25 per minute
-}
-
-var DefaultThresholds = Thresholds{ScanPorts: 100, ScanHosts: 200, SpikeFactor: 5, SpikeMin: 50, FloodPps: 20000, SMTPConns: 30}
-
 // Options for a collector.
 type Options struct {
-	Sample     int // keep 1 in N packet headers (1 = all)
-	TopN       int
-	Thresholds Thresholds
-	NoFlows    bool // counters only, no header sampling
+	Sample  int // keep 1 in N packet headers (1 = all)
+	TopN    int
+	NoFlows bool // counters only, no header sampling
 }
 
 type flowKey struct {
@@ -46,11 +32,9 @@ type flowKey struct {
 }
 
 type vmFlows struct {
-	mu       sync.Mutex
-	dst      map[flowKey]*[2]uint64 // packets, bytes (sampled)
-	syns     uint64
-	smtp     uint64
-	baseline float64 // smoothed new connections per second
+	mu   sync.Mutex
+	dst  map[flowKey]*[2]uint64 // packets, bytes (sampled)
+	syns uint64
 }
 
 // Collector measures one host's VMs window by window.
@@ -159,7 +143,6 @@ func (c *Collector) Window(node, platform, version string) model.Snapshot {
 	}
 	merged := make([]map[flowKey]*[2]uint64, len(c.vms))
 	syns := make([]uint64, len(c.vms))
-	smtp := make([]uint64, len(c.vms))
 	for name, i := range c.vmOf {
 		if v, ok := counters(name); ok {
 			if old, had := c.last[name]; had && v[0] >= old[0] && v[1] >= old[1] {
@@ -190,13 +173,11 @@ func (c *Collector) Window(node, platform, version string) model.Snapshot {
 			m[1] += v[1]
 		}
 		syns[i] += f.syns
-		smtp[i] += f.smtp
 		f.dst = map[flowKey]*[2]uint64{}
-		f.syns, f.smtp = 0, 0
+		f.syns = 0
 		f.mu.Unlock()
 	}
 	scale := float64(c.opt.Sample)
-	th := c.opt.Thresholds
 	for i := range stats {
 		st := &stats[i]
 		st.OutBps = float64(st.OutBytes) * 8 / secs
@@ -204,20 +185,14 @@ func (c *Collector) Window(node, platform, version string) model.Snapshot {
 		if merged[i] == nil {
 			continue
 		}
-		ips := map[netip.Addr]map[uint16]bool{}
-		ports := map[uint16]map[netip.Addr]bool{}
+		ips := map[netip.Addr]bool{}
+		ports := map[uint16]bool{}
 		var list []model.Destination
 		var newUDP uint64
 		for k, v := range merged[i] {
-			if ips[k.ip] == nil {
-				ips[k.ip] = map[uint16]bool{}
-			}
-			ips[k.ip][k.port] = true
+			ips[k.ip] = true
 			if k.port != 0 {
-				if ports[k.port] == nil {
-					ports[k.port] = map[netip.Addr]bool{}
-				}
-				ports[k.port][k.ip] = true
+				ports[k.port] = true
 			}
 			if k.proto == 17 {
 				newUDP++
@@ -232,37 +207,6 @@ func (c *Collector) Window(node, platform, version string) model.Snapshot {
 			list = list[:c.opt.TopN]
 		}
 		st.Top = list
-		// Indicators.
-		for ip, ps := range ips {
-			if len(ps) >= th.ScanPorts {
-				st.Indicators = append(st.Indicators, model.Indicator{Kind: "port_scan", Detail: fmt.Sprintf("%d ports on %s", len(ps), ip), Value: float64(len(ps))})
-			}
-		}
-		for port, hs := range ports {
-			if len(hs) >= th.ScanHosts {
-				st.Indicators = append(st.Indicators, model.Indicator{Kind: "host_scan", Detail: fmt.Sprintf("%d hosts on port %d", len(hs), port), Value: float64(len(hs))})
-			}
-		}
-		for _, d := range list {
-			if pps := float64(d.Packets) / secs; pps >= th.FloodPps {
-				st.Indicators = append(st.Indicators, model.Indicator{Kind: "flood", Detail: fmt.Sprintf("%.0f pps to %s %s/%d", pps, d.IP, d.Proto, d.Port), Value: pps})
-			}
-		}
-		if perMin := float64(smtp[i]) * scale / secs * 60; perMin >= th.SMTPConns {
-			st.Indicators = append(st.Indicators, model.Indicator{Kind: "smtp_burst", Detail: fmt.Sprintf("%.0f new SMTP connections a minute", perMin), Value: perMin})
-		}
-		f := c.flows[st.VM.Interfaces[0].Name]
-		if f != nil {
-			if f.baseline > 0 && st.NewConns >= th.SpikeMin && st.NewConns >= f.baseline*th.SpikeFactor {
-				st.Indicators = append(st.Indicators, model.Indicator{Kind: "conn_spike", Detail: fmt.Sprintf("%.0f new connections/s, usually %.0f", st.NewConns, f.baseline), Value: st.NewConns})
-			}
-			if f.baseline == 0 {
-				f.baseline = st.NewConns
-			} else {
-				f.baseline = f.baseline*0.9 + st.NewConns*0.1
-			}
-		}
-		sort.Slice(st.Indicators, func(a, b int) bool { return st.Indicators[a].Value > st.Indicators[b].Value })
 	}
 	sort.Slice(stats, func(a, b int) bool { return stats[a].OutBps > stats[b].OutBps })
 	snap.VMs = stats
@@ -388,9 +332,6 @@ func (c *Collector) sample(iface string, f *vmFlows, stop chan struct{}) {
 		v[1] += uint64(length)
 		if syn {
 			f.syns++
-			if k.port == 25 {
-				f.smtp++
-			}
 		}
 		f.mu.Unlock()
 	}

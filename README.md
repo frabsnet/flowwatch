@@ -1,29 +1,33 @@
 # FlowWatch
 
-**See which VMs on your hypervisor are sending unusual traffic.**
+**See what traffic every VM on your hypervisor is sending.**
 Made by [Frabs.net](https://frabs.net) · Apache-2.0
 
-![FlowWatch dashboard: six VMs ranked by outbound traffic, two flagged for a port scan and an SMTP burst](docs/dashboard.svg)
+![FlowWatch dashboard: six VMs ranked by outbound traffic](docs/dashboard.svg)
 
 FlowWatch is a small command-line tool for hosting providers. Run it on a
-hypervisor and it shows, per VM, how much traffic is leaving, where it is going,
-and whether it looks like a port scan, a flood or a burst of outbound mail.
+hypervisor and it shows, per VM, how much traffic is leaving, how many new
+connections it is opening, and where that traffic is going.
 
 ```
 $ sudo flowwatch report
-FlowWatch by Frabs.net · hv1 · proxmox (Proxmox VE) · 16:31:46 to 16:32:00
+FlowWatch by Frabs.net · hv1 · proxmox (Proxmox VE) · 16:54:37 to 16:54:47
 
-VM                                     PEAK OUT         SENT     RECEIVED  PEAK CONN   DSTS  INDICATORS
-101 203.0.113.101                     10.4 Kbps      18.2 KB         42 B         17      1  port_scan
-102                                       0 bps          0 B          0 B          0      0
+VM                                     PEAK OUT         SENT     RECEIVED  PEAK CONN   DSTS  TOP DESTINATION
+105 203.0.113.105                      5.3 Mbps       6.7 MB       6.7 MB          0      1  203.0.113.1 icmp/0
+104 203.0.113.104                      1.9 Mbps       2.3 MB       2.3 MB          0      1  203.0.113.1 icmp/0
+103 203.0.113.103                    205.5 Kbps     255.8 KB     255.8 KB          0      1  203.0.113.1 icmp/0
+102 203.0.113.102                     11.2 Kbps       9.1 KB         42 B         19     41  198.51.100.57 tcp/25
+101 203.0.113.101                         0 bps          0 B          0 B          0      0  
+106 203.0.113.106                         0 bps          0 B          0 B          0      0  
 
 Continuous monitoring, incidents and automatic response: frabs.net
 ```
 
 Run `sudo flowwatch` for the live dashboard: VMs ranked by outbound traffic,
-with details, top destinations and indicators for any VM you select.
+with traffic totals and top destinations for any VM you select.
 
-![FlowWatch VM detail: a port scan of 532 ports on one address, with its top destinations](docs/detail.svg)
+![FlowWatch VM detail: traffic totals and top destinations for one VM](docs/detail.svg)
 
 ## Install
 
@@ -79,24 +83,14 @@ from the host's ARP table otherwise.
 - **Destinations and connection activity** come from the first 128 bytes of
   packets the VM sends: Ethernet, IP and TCP/UDP headers. Payloads are never
   read. On very busy hosts, `-sample 10` keeps one packet header in ten.
-- **Indicators** are worth a look, not proof of abuse:
-
-  | Indicator | Raised when, in one window |
-  |---|---|
-  | `port_scan` | 100+ destination ports on one address (`-scan-ports`) |
-  | `host_scan` | 200+ addresses on one port (`-scan-hosts`) |
-  | `conn_spike` | new connections at 5× the VM's own average and at least 50/s (`-spike`, `-spike-min`) |
-  | `flood` | 20,000+ packets a second to one destination (`-flood-pps`) |
-  | `smtp_burst` | 30+ new connections to port 25 a minute (`-smtp`) |
-
 FlowWatch reads hypervisor configuration and kernel tables, never anything
 inside a VM. It changes nothing on the host: no firewall rules, no kernel
 modules, no services.
 
 ## Reports
 
-`-format json` writes every measurement window with per-VM totals, rates,
-top destinations and indicators. VMs are identified by node, platform and
+`-format json` writes every measurement window with per-VM totals, rates
+and top destinations. VMs are identified by node, platform and
 local ID together, so reports from several hypervisors can be merged without
 VM IDs colliding. `-format csv` writes one row per VM per window.
 
@@ -109,9 +103,9 @@ VM IDs colliding. `-format csv` writes one row per VM per window.
 
 ## FlowWatch and Frabs
 
-FlowWatch shows you what is happening on one server, right now. If you want
-it watched around the clock across every server, with incidents, evidence,
-customer reports and automatic responses (rate limiting, blocking, suspending
+FlowWatch shows you the traffic on one server, right now, and leaves the
+judging to you. If you want abuse detected around the clock across every
+server, with incidents, evidence, customer reports and automatic responses (rate limiting, blocking, suspending
 the service in WHMCS, Blesta or HostBill), that is what
 [Frabs](https://frabs.net) does.
 

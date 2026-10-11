@@ -5,16 +5,14 @@
 <g font-family="JetBrains Mono,SFMono-Regular,Menlo,Consolas,monospace" font-size="14">
 <text x="26.4" y="58" fill="#3fa7ad" font-weight="700" xml:space="preserve">FlowWatch</text>
 <text x="118.8" y="58" fill="#ededed" font-weight="700" xml:space="preserve">by Frabs.net</text>
-<text x="236.4" y="58" fill="#8f8f8f" xml:space="preserve">v0.1.0</text>
+<text x="236.4" y="58" fill="#8f8f8f" xml:space="preserve">v0.2.0</text>
 <text x="799.2" y="58" fill="#8f8f8f" xml:space="preserve">frabs-lab · Proxmox VE</text>
 <text x="18.0" y="77" fill="#8f8f8f" xml:space="preserve">Out</text>
-<text x="51.6" y="77" fill="#ededed" xml:space="preserve">6.7 Mbps</text>
+<text x="51.6" y="77" fill="#ededed" xml:space="preserve">6.8 Mbps</text>
 <text x="160.8" y="77" fill="#8f8f8f" xml:space="preserve">In</text>
-<text x="186.0" y="77" fill="#ededed" xml:space="preserve">6.6 Mbps</text>
+<text x="186.0" y="77" fill="#ededed" xml:space="preserve">6.8 Mbps</text>
 <text x="295.2" y="77" fill="#8f8f8f" xml:space="preserve">VMs</text>
 <text x="328.8" y="77" fill="#ededed" xml:space="preserve">6</text>
-<text x="379.2" y="77" fill="#8f8f8f" xml:space="preserve">Flagged</text>
-<text x="446.4" y="77" fill="#f45360" xml:space="preserve">2</text>
 <text x="18.0" y="115" fill="#ededed" font-weight="700" xml:space="preserve">frabs-lab/proxmox-qemu/101</text>
 <text x="253.2" y="115" fill="#8f8f8f" xml:space="preserve">web-101</text>
 <text x="18.0" y="134" fill="#8f8f8f" xml:space="preserve">IPs</text>
@@ -22,28 +20,27 @@
 <text x="186.0" y="134" fill="#8f8f8f" xml:space="preserve">Interfaces</text>
 <text x="278.4" y="134" fill="#ededed" xml:space="preserve">tap101i0</text>
 <text x="18.0" y="153" fill="#8f8f8f" xml:space="preserve">Out</text>
-<text x="51.6" y="153" fill="#ededed" xml:space="preserve">63.0 Kbps (39.4 KB)</text>
+<text x="51.6" y="153" fill="#ededed" xml:space="preserve">65.2 Kbps (40.8 KB)</text>
 <text x="228.0" y="153" fill="#8f8f8f" xml:space="preserve">In</text>
 <text x="253.2" y="153" fill="#ededed" xml:space="preserve">0 bps (0 B)</text>
 <text x="362.4" y="153" fill="#8f8f8f" xml:space="preserve">New conns/s</text>
-<text x="463.2" y="153" fill="#ededed" xml:space="preserve">106</text>
+<text x="463.2" y="153" fill="#ededed" xml:space="preserve">110</text>
 <text x="505.2" y="153" fill="#8f8f8f" xml:space="preserve">Destinations</text>
 <text x="614.4" y="153" fill="#ededed" xml:space="preserve">1</text>
 <text x="639.6" y="153" fill="#8f8f8f" xml:space="preserve">Ports</text>
-<text x="690.0" y="153" fill="#ededed" xml:space="preserve">532</text>
-<text x="18.0" y="191" fill="#8f8f8f" xml:space="preserve">INDICATORS</text>
-<text x="34.8" y="210" fill="#f45360" xml:space="preserve">port_scan</text>
-<text x="135.6" y="210" fill="#ededed" xml:space="preserve">532 ports on 198.51.100.7</text>
-<text x="18.0" y="248" fill="#8f8f8f" xml:space="preserve">TOP DESTINATIONS                         PROTO     PORT      PACKETS        BYTES</text>
-<text x="18.0" y="267" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        367            1         60 B</text>
-<text x="18.0" y="286" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp         74            1         60 B</text>
-<text x="18.0" y="305" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        501            1         60 B</text>
-<text x="18.0" y="324" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        463            1         60 B</text>
-<text x="18.0" y="343" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        293            1         60 B</text>
-<text x="18.0" y="362" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        388            1         60 B</text>
-<text x="18.0" y="381" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        421            1         60 B</text>
-<text x="18.0" y="400" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp         53            1         60 B</text>
-<text x="18.0" y="419" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        432            1         60 B</text>
+<text x="690.0" y="153" fill="#ededed" xml:space="preserve">551</text>
+<text x="18.0" y="191" fill="#8f8f8f" xml:space="preserve">TOP DESTINATIONS                         PROTO     PORT      PACKETS        BYTES</text>
+<text x="18.0" y="210" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        577            1         60 B</text>
+<text x="18.0" y="229" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        153            1         60 B</text>
+<text x="18.0" y="248" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp         73            1         60 B</text>
+<text x="18.0" y="267" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        196            1         60 B</text>
+<text x="18.0" y="286" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        173            1         60 B</text>
+<text x="18.0" y="305" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        155            1         60 B</text>
+<text x="18.0" y="324" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        344            1         60 B</text>
+<text x="18.0" y="343" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        402            1         60 B</text>
+<text x="18.0" y="362" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        459            1         60 B</text>
+<text x="18.0" y="381" fill="#ededed" xml:space="preserve">198.51.100.7                             tcp        185            1         60 B</text>
+<text x="18.0" y="419" fill="#8f8f8f" xml:space="preserve">esc back</text>
 <text x="18.0" y="438" fill="#8f8f8f" xml:space="preserve">↑↓ select · enter details · s sort (out) · / search · p pause · q quit</text>
 <text x="18.0" y="457" fill="#3fa7ad" xml:space="preserve">Continuous monitoring, incidents and automatic response: frabs.net</text>
 </g></svg>
