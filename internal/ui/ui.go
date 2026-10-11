@@ -200,8 +200,9 @@ func Draw(w io.Writer, snap model.Snapshot, panel string, st *State, version str
 	if st.Detail && len(vms) > 0 {
 		drawDetail(&b, vms[st.Selected], cols, body)
 	} else {
-		nameW := max(16, cols-82)
-		head := fmt.Sprintf("%s %s %s %s %s %s %s  %s", pad("VM", nameW), lpad("OUT", 11), lpad("IN", 11), lpad("OUT PPS", 9), lpad("CONN/S", 7), lpad("DSTS", 6), lpad("PORTS", 6), "FLAGS")
+		const ipW = 15
+		nameW := max(12, cols-ipW-82)
+		head := fmt.Sprintf("%s %s %s %s %s %s %s %s  %s", pad("VM", nameW), pad("IP", ipW), lpad("OUT", 11), lpad("IN", 11), lpad("OUT PPS", 9), lpad("CONN/S", 7), lpad("DSTS", 6), lpad("PORTS", 6), "FLAGS")
 		fmt.Fprintf(&b, "%s%s%s\r\n", dim, pad(head, cols), reset)
 		start := 0
 		if st.Selected >= body-1 {
@@ -213,8 +214,9 @@ func Draw(w io.Writer, snap model.Snapshot, panel string, st *State, version str
 			if v.VM.Name != "" && v.VM.Name != v.VM.Key.ID {
 				name += " " + v.VM.Name
 			}
+			ip := ""
 			if len(v.VM.IPs) > 0 {
-				name += "  " + v.VM.IPs[0]
+				ip = v.VM.IPs[0]
 			}
 			flags := ""
 			if len(v.Indicators) > 0 {
@@ -227,7 +229,7 @@ func Draw(w io.Writer, snap model.Snapshot, panel string, st *State, version str
 			if v.Sampled {
 				conns = strconv.FormatFloat(v.NewConns, 'f', 0, 64)
 			}
-			line := fmt.Sprintf("%s %s %s %s %s %s %s  ", pad(name, nameW), lpad(Rate(v.OutBps), 11), lpad(Rate(v.InBps), 11), lpad(strconv.FormatFloat(v.OutPps, 'f', 0, 64), 9), lpad(conns, 7), lpad(strconv.Itoa(v.UniqueDstIPs), 6), lpad(strconv.Itoa(v.UniqueDstPort), 6))
+			line := fmt.Sprintf("%s %s %s %s %s %s %s %s  ", pad(name, nameW), pad(ip, ipW), lpad(Rate(v.OutBps), 11), lpad(Rate(v.InBps), 11), lpad(strconv.FormatFloat(v.OutPps, 'f', 0, 64), 9), lpad(conns, 7), lpad(strconv.Itoa(v.UniqueDstIPs), 6), lpad(strconv.Itoa(v.UniqueDstPort), 6))
 			if i == st.Selected {
 				fmt.Fprintf(&b, "%s%s%s%s\r\n", inv, line, reset, flags)
 			} else {

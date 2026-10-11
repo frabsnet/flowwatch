@@ -17,7 +17,7 @@ import (
 	"github.com/frabsnet/flowwatch/internal/ui"
 )
 
-var version = "0.1.0"
+var version = "0.1.1"
 
 const usage = `FlowWatch by Frabs.net %s · https://frabs.net
 See which VMs on this server are sending unusual outbound traffic.

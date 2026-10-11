@@ -3,6 +3,8 @@
 **See which VMs on your hypervisor are sending unusual traffic.**
 Made by [Frabs.net](https://frabs.net) · Apache-2.0
 
+![FlowWatch dashboard: six VMs ranked by outbound traffic, two flagged for a port scan and an SMTP burst](docs/dashboard.svg)
+
 FlowWatch is a small command-line tool for hosting providers. Run it on a
 hypervisor and it shows, per VM, how much traffic is leaving, where it is going,
 and whether it looks like a port scan, a flood or a burst of outbound mail.
@@ -20,6 +22,8 @@ Continuous monitoring, incidents and automatic response: frabs.net
 
 Run `sudo flowwatch` for the live dashboard: VMs ranked by outbound traffic,
 with details, top destinations and indicators for any VM you select.
+
+![FlowWatch VM detail: a port scan of 532 ports on one address, with its top destinations](docs/detail.svg)
 
 ## Install
 
