@@ -1,7 +1,7 @@
 # FlowWatch
 
 **See which VMs on your hypervisor are sending unusual traffic.**
-Made by [Frabs](https://frabs.net) · Apache-2.0
+Made by [Frabs.net](https://frabs.net) · Apache-2.0
 
 FlowWatch is a small command-line tool for hosting providers. Run it on a
 hypervisor and it shows, per VM, how much traffic is leaving, where it is going,
@@ -9,7 +9,7 @@ and whether it looks like a port scan, a flood or a burst of outbound mail.
 
 ```
 $ sudo flowwatch report
-FlowWatch by Frabs · hv1 · proxmox (Proxmox VE) · 16:31:46 to 16:32:00
+FlowWatch by Frabs.net · hv1 · proxmox (Proxmox VE) · 16:31:46 to 16:32:00
 
 VM                                     PEAK OUT         SENT     RECEIVED  PEAK CONN   DSTS  INDICATORS
 101 203.0.113.101                     10.4 Kbps      18.2 KB         42 B         17      1  port_scan

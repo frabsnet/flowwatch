@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	Brand    = "FlowWatch by Frabs"
+	Brand    = "FlowWatch by Frabs.net"
 	BrandURL = "https://frabs.net"
 	Footer   = "Continuous monitoring, incidents and automatic response: frabs.net"
 )
@@ -176,7 +176,7 @@ func Draw(w io.Writer, snap model.Snapshot, panel string, st *State, version str
 	if panel != "" {
 		where = panel
 	}
-	fmt.Fprintf(&b, "%s%s FlowWatch %s%s by Frabs%s  %sv%s · %s%s\x1b[%dG%s%s%s\r\n", teal, bold, reset, bold, reset, dim, version, BrandURL, reset, max(1, cols-len(snap.Node)-len(where)-3), dim, snap.Node+" · "+where, reset)
+	fmt.Fprintf(&b, "%s%s FlowWatch %s%s by Frabs.net%s  %sv%s%s\x1b[%dG%s%s%s\r\n", teal, bold, reset, bold, reset, dim, version, reset, max(1, cols-len(snap.Node)-len(where)-3), dim, snap.Node+" · "+where, reset)
 	flagColour := ""
 	if flagged > 0 {
 		flagColour = red
