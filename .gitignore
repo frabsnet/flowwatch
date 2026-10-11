@@ -1,0 +1,4 @@
+flowwatch
+/dist/
+*.json
+*.csv
